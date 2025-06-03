@@ -17,6 +17,16 @@
     </div>
 
     <main class="content-wrap card">
+
+        {{-- Presentation Button --}}
+        <div class="mb-m print-hidden text-right">
+            @if(str_contains($page->html, '<section'))
+                <a href="{{ url('/pages/' . $page->id . '/presentation') }}" target="_blank" class="btn btn-primary">
+                    🎤 Start Presentation
+                </a>
+            @endif
+        </div>
+
         <div component="page-display"
              option:page-display:page-id="{{ $page->id }}"
              class="page-content clearfix">
@@ -138,6 +148,13 @@
         <h5>{{ trans('common.actions') }}</h5>
 
         <div class="icon-list text-link">
+@if($page->html && str_contains($page->html, '<section>'))
+    <a href="{{ url('/pages/' . $page->id . '/presentation') }}" class="icon-list-item" target="_blank">
+        <span>@icon('play')</span>
+        <span>Presentation</span>
+    </a>
+@endif
+
 
             {{--User Actions--}}
             @if(userCan('page-update', $page))

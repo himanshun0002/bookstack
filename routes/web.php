@@ -21,6 +21,16 @@ use Illuminate\Session\Middleware\StartSession;
 use Illuminate\Support\Facades\Route;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 
+use BookStack\Entities\Models\Page;
+use BookStack\Entities\Tools\PageContent;
+
+// Make sure this route is placed AFTER all other built-in BookStack routes
+Route::get('/pages/{page}/presentation', function (Page $page) {
+    $page->html = (new PageContent($page))->render();
+    return view('pages.presentation', ['page' => $page]);
+})->name('pages.presentation');
+
+
 // Status & Meta routes
 Route::get('/status', [SettingControllers\StatusController::class, 'show']);
 Route::get('/robots.txt', [MetaController::class, 'robots']);
@@ -381,3 +391,5 @@ Route::get('/theme/{theme}/{path}', [ThemeController::class, 'publicFile'])
     ->where('path', '.*$');
 
 Route::fallback([MetaController::class, 'notFound'])->name('fallback');
+
+
