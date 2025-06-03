@@ -19,6 +19,10 @@
             height: 100vh;
             text-align: left !important;
         }
+        .reveal .slides > section {
+            width: 100%;
+            height: 100%;
+        }
         .reveal h2 { 
             color: #fff;
             margin-bottom: 30px;
@@ -55,6 +59,16 @@
         }
         .reveal .controls { 
             color: #42affa;
+        }
+        /* Ensure slides take full space */
+        .reveal .slides > section,
+        .reveal .slides > section > section {
+            min-height: 100% !important;
+            transform-style: flat !important;
+        }
+        /* Hide overflow to prevent seeing other slides */
+        .reveal .slides {
+            overflow: hidden !important;
         }
     </style>
 </head>
@@ -101,24 +115,25 @@
                 // Navigation
                 hash: true,
                 slideNumber: 'c/t',
-                overview: true,
-                center: false,
+                overview: false, // Disable overview
+                center: true,
                 touch: true,
                 loop: false,
                 rtl: false,
-                navigationMode: 'default',
+                navigationMode: 'linear', // Force linear navigation
                 
                 // Presentation features
                 progress: true,
                 autoPlayMedia: true,
                 autoSlide: 0,
                 
-                // Focus on current slide
-                disableLayout: false,
+                // View
                 display: 'block',
+                viewDistance: 1, // Only load current slide
+                preloadIframes: false, // Don't preload iframes
                 
                 // Transition
-                transition: 'slide',
+                transition: 'slide', // or try: 'fade', 'convex', 'concave'
                 transitionSpeed: 'default',
                 backgroundTransition: 'fade',
                 
@@ -141,10 +156,28 @@
                 }
             });
 
-            // Force a layout update
-            setTimeout(function() {
-                Reveal.layout();
-            }, 200);
+            // Ensure only one slide is visible
+            Reveal.addEventListener('ready', function() {
+                // Hide all slides except the current one
+                var slides = document.querySelectorAll('.reveal .slides > section');
+                slides.forEach(function(slide) {
+                    if (!slide.classList.contains('present')) {
+                        slide.style.display = 'none';
+                    }
+                });
+            });
+
+            // Handle slide changes
+            Reveal.addEventListener('slidechanged', function(event) {
+                var slides = document.querySelectorAll('.reveal .slides > section');
+                slides.forEach(function(slide) {
+                    if (slide === event.currentSlide) {
+                        slide.style.display = 'block';
+                    } else {
+                        slide.style.display = 'none';
+                    }
+                });
+            });
         });
     </script>
 </body>
