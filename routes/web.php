@@ -25,8 +25,20 @@ use BookStack\Entities\Models\Page;
 use BookStack\Entities\Tools\PageContent;
 
 // Make sure this route is placed AFTER all other built-in BookStack routes
-Route::get('/pages/{page}/presentation', function (Page $page) {
-    $page->html = (new PageContent($page))->render();
+Route::get('/pages/{pageId}/presentation', function ($pageId) {
+    /** @var Page $page */
+    $page = Page::query()->findOrFail($pageId);
+    $pageContent = new PageContent($page);
+    $page->html = $pageContent->render();
+    
+    // Debug log
+    \Log::info('Presentation Debug', [
+        'page_id' => $page->id,
+        'page_name' => $page->name,
+        'html_length' => strlen($page->html),
+        'has_sections' => str_contains($page->html, '<section')
+    ]);
+    
     return view('pages.presentation', ['page' => $page]);
 })->name('pages.presentation');
 
