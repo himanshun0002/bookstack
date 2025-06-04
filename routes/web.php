@@ -31,17 +31,89 @@ Route::get('/pages/{pageId}/presentation', function ($pageId) {
     $pageContent = new PageContent($page);
     $page->html = $pageContent->render();
     
+    // First try to extract existing sections
+    preg_match_all('/<section.*?<\/section>/is', $page->html, $matches);
+    $sections = $matches[0];
+    
+    // If no sections found, create sections from content
+    if (empty($sections)) {
+        // Split content by "Slide X" pattern
+        $parts = preg_split('/(?=Slide\s+\d+)/i', $page->html);
+        $sections = [];
+        
+        foreach ($parts as $part) {
+            $part = trim($part);
+            if (!empty($part)) {
+                // Extract the slide number and content
+                if (preg_match('/^(Slide\s+\d+)(.*)/is', $part, $matches)) {
+                    $heading = trim($matches[1]);
+                    $content = trim($matches[2]);
+                    
+                    // Create a properly formatted section
+                    $sections[] = sprintf(
+                        '<section><h2>%s</h2>%s</section>',
+                        $heading,
+                        $content
+                    );
+                }
+            }
+        }
+    }
+    
     // Debug log
     \Log::info('Presentation Debug', [
         'page_id' => $page->id,
         'page_name' => $page->name,
         'html_length' => strlen($page->html),
-        'has_sections' => str_contains($page->html, '<section')
+        'has_sections' => str_contains($page->html, '<section'),
+        'sections_count' => count($sections),
+        'sections' => $sections,
+        'raw_html' => $page->html
     ]);
     
-    return view('pages.presentation', ['page' => $page]);
+    return view('pages.presentation', [
+        'page' => $page,
+        'sections' => $sections
+    ]);
 })->name('pages.presentation');
 
+// New slideshow player route
+Route::get('/pages/{pageId}/slideshow', function ($pageId) {
+    /** @var Page $page */
+    $page = Page::query()->findOrFail($pageId);
+    $pageContent = new PageContent($page);
+    $page->html = $pageContent->render();
+    
+    // Extract sections
+    preg_match_all('/<section.*?<\/section>/is', $page->html, $matches);
+    $sections = $matches[0];
+    
+    // If no sections found, create sections from content
+    if (empty($sections)) {
+        $parts = preg_split('/(?=Slide\s+\d+)/i', $page->html);
+        $sections = [];
+        
+        foreach ($parts as $part) {
+            $part = trim($part);
+            if (!empty($part)) {
+                if (preg_match('/^(Slide\s+\d+)(.*)/is', $part, $matches)) {
+                    $heading = trim($matches[1]);
+                    $content = trim($matches[2]);
+                    $sections[] = sprintf(
+                        '<section><h2>%s</h2>%s</section>',
+                        $heading,
+                        $content
+                    );
+                }
+            }
+        }
+    }
+    
+    return view('pages.slideshow', [
+        'page' => $page,
+        'sections' => $sections
+    ]);
+})->name('pages.slideshow');
 
 // Status & Meta routes
 Route::get('/status', [SettingControllers\StatusController::class, 'show']);
@@ -53,6 +125,12 @@ Route::get('/opensearch.xml', [MetaController::class, 'opensearch']);
 
 // Authenticated routes...
 Route::middleware('auth')->group(function () {
+
+    // Presentation and Slideshow routes
+    Route::get('/pages/{pageId}/presentation', [EntityControllers\SlideshowController::class, 'showPresentation'])
+        ->name('pages.presentation');
+    Route::get('/pages/{pageId}/slideshow', [EntityControllers\SlideshowController::class, 'showSlideshow'])
+        ->name('pages.slideshow');
 
     // Secure images routing
     Route::get('/uploads/images/{path}', [UploadControllers\ImageController::class, 'showImage'])
